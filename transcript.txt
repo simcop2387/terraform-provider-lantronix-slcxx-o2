@@ -1,0 +1,82 @@
+Logging out...
+
+
+
+
+
+Welcome to the SLC
+
+
+
+login: sysadmin
+Password: 
+Incorrect Login or Username
+
+login: sysadmin
+Password: 
+
+
+Welcome to the SecureLinx Console Manager
+Model Number: SLC48
+For a list of commands, type 'help'.
+
+[serserv]> show
+Incomplete Command.
+[serserv]> 
+[serserv]> admin firmware
+Invalid number of parameters.
+[serserv]> admin config show
+Missing value for parameter 'show'.
+[serserv]> admin config     
+Invalid number of parameters.
+[serserv]> admin config ?
+Config Command Synopsis
+-----------------------
+Saves the current SLC configuration to a selected location:
+admin config save <Config Name> location <default|ftp|sftp|nfs|cifs|pccard> 
+             [nfsdir <NFS Mounted Directory>] [pccardslot <upper|lower>]
+
+Restores a saved configuration to the SLC:
+admin config restore <Config Name> location <default|ftp|sftp|nfs|cifs|pccard> 
+             [nfsdir <NFS Mounted Directory>] [pccardslot <upper|lower>]
+             [preserveconfig <Config Params to Preserve>]
+
+Restores the SLC to factory default settings:
+admin config factorydefaults [savesshkeys <enable|disable>]
+             [savesslcert <enable|disable>]
+             [preserveconfig <Config Params to Preserve>]
+
+<Config Params to Preserve> is a comma separated list of current configuration
+parameters to retain after the config restore or factorydefaults:
+  nt - Networking                    lu - Local Users
+  sv - Services                      dp - Device Ports
+  dt - Date/Time                     pc - PC Card
+
+Deletes a configuration:
+admin config delete <Config Name> location <default|cifs|pccard>
+             [pccardslot <upper|lower>]
+
+Copies a configuration from current bank to other bank (for dual-boot SLCs):
+admin config copy
+
+Lists the configurations saved to a location:
+admin config show <default|ftp|sftp|nfs|cifs|pccard> 
+             [nfsdir <NFS Mounted Directory>] [pccardslot <upper|lower>]
+
+Note: A reboot will automatically be done after a successful 
+      config restore or factorydefaults.
+[serserv]> 
+___Current Version_____________________________________________________________
+Model: SLC48
+Power Supply: AC, 2 power supplies
+S/N: 0080A38936EB
+Firmware Version: 5.2a
+Firmware Updated: Sun Nov  8 09:38:14 2026
+Bootloader Version: 1.0.0.L1
+Memory: 128 MB
+CF Size: 256 MB
+Eth1 HW Address: 00:80:a3:89:36:eb
+Eth2 HW Address: 00:80:a3:89:36:ec
+I/O Board Revision(s): 1, 0, 0
+[serserv]> 
+
