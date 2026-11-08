@@ -13,6 +13,10 @@ import (
 
 const (
 	iac, will, wont, do, dont, sb, se = 255, 251, 252, 253, 254, 250, 240
+	is, send                          = 0, 1
+	optTTYPE                          = 24
+
+	terminalType = "VT100"
 
 	pagerMarker   = "Press <space> for next page"
 	pagerSentence = " -- Press <space> for next page, <enter> for next line, or 'q' to quit --"
@@ -68,6 +72,10 @@ func (t *telnet) session(ctx context.Context, command string) (string, error) {
 	}
 	s := &session{conn: conn, cfg: t.cfg}
 	defer s.logout()
+	// x15login gates the login banner on negotiating terminal type.
+	if _, err := s.conn.Write([]byte{iac, will, optTTYPE}); err != nil {
+		return "", &DisconnectedError{Err: err}
+	}
 
 	if err := s.login(ctx); err != nil {
 		return "", err
@@ -120,17 +128,23 @@ func (s *session) consume(in []byte) {
 			for j+1 < len(in) && !(in[j] == iac && in[j+1] == se) {
 				j++
 			}
-			i = min(j+2, len(in)) // whole SB..SE dropped
+			if j+1 < len(in) { // complete SB..SE; only TTYPE SEND gets an answer
+				body := in[i+2 : j] // opt + variant + data
+				if len(body) >= 2 && body[0] == optTTYPE && body[1] == send {
+					replies = append(replies, iac, sb, optTTYPE, is)
+					replies = append(replies, terminalType...)
+					replies = append(replies, iac, se)
+				}
+			}
+			i = min(j+2, len(in))
 		case b == iac && i+2 < len(in):
 			cmd, opt := in[i+1], in[i+2]
-			switch cmd {
-			case do, will:
-				reject := byte(wont)
-				if cmd == do {
-					reject = dont
-				}
-				replies = append(replies, iac, reject, opt)
-			}
+			switch {
+			case cmd == do && opt == optTTYPE:
+				replies = append(replies, iac, will, opt) // banner is gated on TTYPE
+			case cmd == do:
+				replies = append(replies, iac, dont, opt)
+			} // server WILLs go unanswered (matches known-good client capture)
 			i += 3
 		case b == iac:
 			i++ // incomplete IAC at chunk edge; wait for more
@@ -277,6 +291,13 @@ func stripEcho(text, command string) string {
 }
 
 func (s *session) logout() {
+	// Quit a parked pager first: "logout" typed into the pager is eaten as
+	// keystrokes, leaving the session stuck and the telnet slot leaked.
+	if _, err := s.conn.Write([]byte("q" + cmdTerminator)); err != nil {
+		_ = s.conn.Close()
+		return
+	}
+	time.Sleep(50 * time.Millisecond)
 	if _, err := s.conn.Write([]byte("logout" + cmdTerminator)); err != nil {
 		_ = s.conn.Close()
 		return

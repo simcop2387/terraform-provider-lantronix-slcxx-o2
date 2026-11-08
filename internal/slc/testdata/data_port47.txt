@@ -1,0 +1,14 @@
+___Current Device Port Settings________________________________________________
+Number: 47  Name: Port-47
+Banner: <none>
+
+Data Settings------------------------------------------------------------------
+Baud Rate: 9600  
+Data Bits: 8
+Stop Bits: 1
+Parity: none
+Flow Control: none    
+Logins: disabled
+Check DSR: disabled
+Close DSR: disabled
+Break Seq: \x1bB      

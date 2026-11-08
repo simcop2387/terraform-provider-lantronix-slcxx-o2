@@ -1,0 +1,17 @@
+___Current Device Port Settings________________________________________________
+Number: 1  Name: Port-1
+Banner: <none>
+
+IP Settings--------------------------------------------------------------------
+Telnet: enabled
+Telnet Port: 2000
+Telnet Auth: disabled
+SSH: disabled
+SSH Port: 3000
+SSH Auth: enabled 
+TCP: disabled
+TCP Port: 4000
+TCP Auth: disabled
+IP: <none>
+Web Columns: 80
+Web Rows: 24

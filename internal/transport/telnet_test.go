@@ -57,8 +57,35 @@ func (f *fakeDevice) handle(c net.Conn) {
 	defer func() { _ = c.Close() }()
 	w := func(s string) { _, _ = c.Write([]byte(s)) }
 
-	// IAC proposal like the device sends; client must answer and still work.
-	_, _ = c.Write([]byte{iac, do, 24, iac, will, 3})
+	// Negotiation mirrors x15login's TTYPE gate: banner only flows once the
+	// client answers SB TTYPE SEND with an IS value.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		b := make([]byte, 256)
+		_ = c.SetReadDeadline(time.Now().Add(3 * time.Second))
+		for {
+			n, err := c.Read(b)
+			if err != nil {
+				return
+			}
+			if bytesContains(b[:n], []byte{iac, will, 24}) { // client offered TTYPE
+				_, _ = c.Write([]byte{iac, sb, 24, 1, iac, se}) // SB TTYPE SEND
+				break
+			}
+		}
+		for {
+			n, err := c.Read(b)
+			if err != nil {
+				return
+			}
+			if bytesContains(b[:n], []byte{iac, sb, 24, 0}) { // IS answer
+				return
+			}
+		}
+	}()
+	go func() { _, _ = c.Write([]byte{iac, do, 24, iac, will, 3}) }()
+	<-done
 
 	w("\r\n\n\r\n\nWelcome to the SLC\n\n\n\n")
 	w("\r\x00login: ")
@@ -166,6 +193,22 @@ func (lr *lineReader) next() (string, bool) {
 			return "", false
 		}
 	}
+}
+
+func bytesContains(h, n []byte) bool {
+	for i := 0; i+len(n) <= len(h); i++ {
+		ok := true
+		for j := range n {
+			if h[i+j] != n[j] {
+				ok = false
+				break
+			}
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
 
 func indexLineEnd(b []byte) int {

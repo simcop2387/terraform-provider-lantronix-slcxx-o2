@@ -1,0 +1,10 @@
+___Current Device Port Settings________________________________________________
+Number: 1  Name: Port-1
+Banner: <none>
+
+Modem Settings-----------------------------------------------------------------
+Modem State: disabled
+Modem Mode: Text
+Idle Timeout: 30 seconds
+Restart Delay: 30 seconds
+Dial-out Number: <none>
