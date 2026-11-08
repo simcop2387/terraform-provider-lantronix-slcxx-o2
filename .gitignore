@@ -1,0 +1,5 @@
+.agents/
+.crush/
+opencode.json
+secrets.txt
+mcp-telnet/
