@@ -1,4 +1,4 @@
-// Package provider exposes the lantronix_slcxx_o2 Terraform provider.
+// Package provider exposes the lantronix-slcxx-o2 Terraform provider.
 package provider
 
 import (
@@ -40,7 +40,7 @@ type providerModel struct {
 }
 
 func (p *slcProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "lantronix_slcxx_o2"
+	resp.TypeName = "lantronix-slcxx-o2"
 	resp.Version = p.version
 }
 

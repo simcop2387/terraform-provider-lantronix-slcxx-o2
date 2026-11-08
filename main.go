@@ -17,7 +17,7 @@ func main() {
 	flag.Parse()
 
 	providerserver.Serve(context.Background(), provider.New(version), providerserver.ServeOpts{
-		Address: "registry.terraform.io/simcop2387/lantronix_slcxx_o2",
+		Address: "registry.terraform.io/simcop2387/lantronix-slcxx-o2",
 		Debug:   debug,
 	})
 }
