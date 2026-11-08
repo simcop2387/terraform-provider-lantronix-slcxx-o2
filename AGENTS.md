@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues live in GitHub (`simcop2387/terraform-provider-lantronix-slcXX-o2`), driven through the GitHub MCP server. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub (`simcop2387/terraform-provider-lantronix-slcxx-o2`), driven through the GitHub MCP server. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
