@@ -76,7 +76,7 @@ func TestAccPort_lifecycle(t *testing.T) {
 
 	r.Test(t, r.TestCase{
 		ProtoV6ProviderFactories: proto6Factories(),
-		Steps: []r.Step{
+		Steps: []r.TestStep{
 			{ // adopt-and-set at 9600 8N1
 				Config: base + fmt.Sprintf(`
 resource "lantronix-slcxx-o2_port" "t" {
@@ -90,7 +90,7 @@ resource "lantronix-slcxx-o2_port" "t" {
 }
 `, n),
 				Check: r.ComposeTestCheckFunc(
-					r.ResourceAttr("lantronix-slcxx-o2_port.t.baud_rate", "9600"),
+					r.TestCheckResourceAttr("lantronix-slcxx-o2_port.t", "baud_rate", "9600"),
 					verifySerial(t, n, 9600),
 				),
 			},
@@ -107,7 +107,7 @@ resource "lantronix-slcxx-o2_port" "t" {
 }
 `, n),
 				Check: r.ComposeTestCheckFunc(
-					r.ResourceAttr("lantronix-slcxx-o2_port.t.baud_rate", "115200"),
+					r.TestCheckResourceAttr("lantronix-slcxx-o2_port.t", "baud_rate", "115200"),
 					verifySerial(t, n, 115200),
 				),
 			},
@@ -139,7 +139,7 @@ func TestAccPortAccess_disableOnDestroy(t *testing.T) {
 
 	r.Test(t, r.TestCase{
 		ProtoV6ProviderFactories: proto6Factories(),
-		Steps: []r.Step{
+		Steps: []r.TestStep{
 			{ // open telnet-in with auth on the sacrificial port
 				Config: base + fmt.Sprintf(`
 resource "lantronix-slcxx-o2_port_access" "t" {
@@ -151,7 +151,7 @@ resource "lantronix-slcxx-o2_port_access" "t" {
 }
 `, n),
 				Check: r.ComposeTestCheckFunc(
-					r.ResourceAttr("lantronix-slcxx-o2_port_access.t.telnet_enabled", "true"),
+					r.TestCheckResourceAttr("lantronix-slcxx-o2_port_access.t", "telnet_enabled", "true"),
 					verifyTelnetEnabled(t, n, true),
 				),
 			},
