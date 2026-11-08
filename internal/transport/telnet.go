@@ -14,9 +14,9 @@ import (
 const (
 	iac, will, wont, do, dont, sb, se = 255, 251, 252, 253, 254, 250, 240
 
-	pagerMarker  = "Press <space> for next page"
+	pagerMarker   = "Press <space> for next page"
 	pagerSentence = " -- Press <space> for next page, <enter> for next line, or 'q' to quit --"
-	maxPages    = 500
+	maxPages      = 500
 
 	promptRe      = `\[[^\]\r\n]+\]> \z`
 	menuPromptRe  = `\[Enter 1-\d+\]> \z`
