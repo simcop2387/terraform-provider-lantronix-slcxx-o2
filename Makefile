@@ -35,7 +35,7 @@ acc-tofu: build harness
 		go test ./internal/provider/ -timeout 90m -v -run TestAcc
 
 docs:
-	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest --provider-name lantronix-slcxx-o2
 
 tidy:
 	go mod tidy
