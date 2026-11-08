@@ -133,7 +133,7 @@ func (f *fakeDevice) handle(c net.Conn) {
 						return
 					}
 				}
-				w("Parity: none\r\n" + prompt) // page two: new content only
+				w("\r\nParity: none\r\n" + prompt) // page two: new content only
 				continue
 			}
 			w(out + "\r\n" + prompt)

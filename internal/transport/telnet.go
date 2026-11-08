@@ -14,7 +14,8 @@ import (
 const (
 	iac, will, wont, do, dont, sb, se = 255, 251, 252, 253, 254, 250, 240
 
-	pagerMarker = "Press <space> for next page"
+	pagerMarker  = "Press <space> for next page"
+	pagerSentence = " -- Press <space> for next page, <enter> for next line, or 'q' to quit --"
 	maxPages    = 500
 
 	promptRe      = `\[[^\]\r\n]+\]> \z`
@@ -173,7 +174,6 @@ func (s *session) login(ctx context.Context) error {
 	attempts := 1 + s.cfg.LoginRetries
 	var lastErr error
 	for a := 0; a < attempts; a++ {
-		s.clean.Reset()
 		if err := s.waitFor(ctx, loginPat); err != nil {
 			return err
 		}
@@ -197,6 +197,11 @@ func (s *session) login(ctx context.Context) error {
 			return &AuthFailedError{Err: fmt.Errorf("device reports %q; stopping to avoid extended lockout", lockoutText)}
 		case strings.Contains(text, badLoginText):
 			lastErr = fmt.Errorf("device reported %q", badLoginText)
+			if i := strings.Index(text, badLoginText); i >= 0 {
+				rest := text[i+len(badLoginText):]
+				s.clean.Reset()
+				s.clean.WriteString(rest)
+			}
 			continue
 		case menuPrompt.MatchString(text):
 			return &AuthFailedError{Err: fmt.Errorf("account lands in menu mode; a full-CLI admin user is required")}
@@ -255,12 +260,18 @@ func stripEcho(text, command string) string {
 	if m := promptPat.FindStringIndex(text); m != nil {
 		text = text[:m[0]]
 	}
+	paged := strings.Contains(text, pagerSentence)
+	text = strings.ReplaceAll(text, pagerSentence, "") // pager prompt absorbed (#6)
 	var kept []string
 	for _, line := range strings.Split(strings.TrimRight(text, "\r\n"), "\n") {
-		if strings.Contains(line, pagerMarker) {
-			continue // pager prompt absorbed by the Transport (#6)
+		line = strings.TrimRight(line, " \t\r")
+		if line == "" && paged {
+			continue // seam left by pager removal
 		}
-		kept = append(kept, strings.TrimRight(line, " \t\r"))
+		if strings.Contains(line, pagerMarker) {
+			continue
+		}
+		kept = append(kept, line)
 	}
 	return strings.Join(kept, "\n")
 }
