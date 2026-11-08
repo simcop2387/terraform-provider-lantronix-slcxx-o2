@@ -16,6 +16,12 @@ How a Device Port is reached over the network: which access services it exposes 
 **Transport**
 The session channel through which the provider speaks the SLC CLI: Telnet (MVP), SSH or serial console (later). All transports carry the same CLI dialect.
 
+**Session**
+One authenticated CLI conversation: dial, login, commands, `logout`. Created per operation and always logged out — never pooled. The device permits only one live Session per user per transport, so Sessions are serialized.
+
+**Pager Prompt**
+The firmware's mid-output pause string (` -- Press <space> for next page... --`) emitted when `terminallines` is enabled. The Transport drives it away transparently; callers must never see it.
+
 **Lab Device**
 The single SLC48 at 192.168.0.197 (firmware 5.2a, single-bank) used for live development and acceptance. Its identity and credentials live in `secrets.txt`, never in the repo.
 
