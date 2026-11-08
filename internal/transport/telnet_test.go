@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -16,13 +17,15 @@ import (
 // prompt "[host]> " with trailing space, re-emitted on empty input, optional
 // pager, logout banner then close.
 type fakeDevice struct {
-	t          *testing.T
-	ln         net.Listener
-	user, pass string
-	promptHost string
-	badFirst   int // reject this many login attempts before accepting
-	lockout    bool
-	pager      bool // page every command output once
+	t               *testing.T
+	mu              sync.Mutex
+	sawPostLoginIAC bool
+	ln              net.Listener
+	user, pass      string
+	promptHost      string
+	badFirst        int // reject this many login attempts before accepting
+	lockout         bool
+	pager           bool // page every command output once
 }
 
 func serveFake(t *testing.T, f *fakeDevice) *fakeDevice {
@@ -125,6 +128,22 @@ func (f *fakeDevice) handle(c net.Conn) {
 
 	prompt := "[" + f.promptHost + "]> "
 	w("\r\nWelcome to the SecureLinx Console Manager\r\nModel Number: SLC48\r\n\r\n" + prompt)
+
+	// x15login re-proposes options shortly after login; answering them makes
+	// it redraw the whole screen. The transport must stay silent post-login.
+	br.onRaw = func(b []byte) {
+		for i := 0; i < len(b); i++ {
+			if b[i] == iac {
+				f.mu.Lock()
+				f.sawPostLoginIAC = true
+				f.mu.Unlock()
+				return
+			}
+		}
+	}
+	time.Sleep(50 * time.Millisecond)
+	_, _ = c.Write([]byte{iac, will, 3, iac, do, 1})
+
 	for {
 		cmd, ok := br.next()
 		if !ok {
@@ -171,8 +190,9 @@ func (f *fakeDevice) handle(c net.Conn) {
 // lineReader accumulates text (ignoring IAC sequences and NULs) and yields
 // CR/LF-terminated lines.
 type lineReader struct {
-	c net.Conn
-	b []byte
+	c     net.Conn
+	b     []byte
+	onRaw func([]byte)
 }
 
 func newLineReader(c net.Conn) *lineReader { return &lineReader{c: c} }
@@ -187,6 +207,9 @@ func (lr *lineReader) next() (string, bool) {
 		}
 		n, err := lr.c.Read(buf)
 		if n > 0 {
+			if lr.onRaw != nil {
+				lr.onRaw(buf[:n])
+			}
 			lr.b = append(lr.b, buf[:n]...)
 		}
 		if err != nil {
@@ -345,5 +368,21 @@ func TestConcurrentRunsSerialize(t *testing.T) {
 		if err := <-errc; err != nil && !errors.Is(err, io.EOF) {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestNoIACRepliesAfterLogin(t *testing.T) {
+	f := serveFake(t, &fakeDevice{user: "sysadmin", pass: "PASS", promptHost: "serserv"})
+	out, err := Dial(testCfg(f)).Run(context.Background(), "x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "Welcome") {
+		t.Fatalf("redraw leaked into output: %q", out)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.sawPostLoginIAC {
+		t.Fatal("client answered IAC proposals after login; x15login would redraw the screen")
 	}
 }

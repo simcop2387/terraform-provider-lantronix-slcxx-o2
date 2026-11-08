@@ -70,7 +70,7 @@ func (t *telnet) session(ctx context.Context, command string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("dial %s: %w", addr, err)
 	}
-	s := &session{conn: conn, cfg: t.cfg}
+	s := &session{conn: conn, cfg: t.cfg, negotiate: true}
 	defer s.logout()
 	// x15login gates the login banner on negotiating terminal type.
 	if _, err := s.conn.Write([]byte{iac, will, optTTYPE}); err != nil {
@@ -92,10 +92,13 @@ func (t *telnet) session(ctx context.Context, command string) (string, error) {
 // line mode with everything declined), NULs are stripped, and text lands in
 // s.clean with chunk boundaries normalized away.
 type session struct {
-	conn  net.Conn
-	cfg   Config
-	clean bytes.Buffer // IAC-stripped text received since last reset
+	conn      net.Conn
+	cfg       Config
+	clean     bytes.Buffer // IAC-stripped text received since last reset
+	negotiate bool         // answer IACs only during handshake; a reply mid-session makes x15login redraw the screen
 }
+
+func (s *session) stopNegotiating() { s.negotiate = false }
 
 func (s *session) pump(deadline time.Time) error {
 	if err := s.conn.SetReadDeadline(deadline); err != nil {
@@ -128,7 +131,7 @@ func (s *session) consume(in []byte) {
 			for j+1 < len(in) && !(in[j] == iac && in[j+1] == se) {
 				j++
 			}
-			if j+1 < len(in) { // complete SB..SE; only TTYPE SEND gets an answer
+			if j+1 < len(in) && s.negotiate { // complete SB..SE; only TTYPE SEND gets an answer
 				body := in[i+2 : j] // opt + variant + data
 				if len(body) >= 2 && body[0] == optTTYPE && body[1] == send {
 					replies = append(replies, iac, sb, optTTYPE, is)
@@ -139,12 +142,14 @@ func (s *session) consume(in []byte) {
 			i = min(j+2, len(in))
 		case b == iac && i+2 < len(in):
 			cmd, opt := in[i+1], in[i+2]
-			switch {
-			case cmd == do && opt == optTTYPE:
-				replies = append(replies, iac, will, opt) // banner is gated on TTYPE
-			case cmd == do:
-				replies = append(replies, iac, dont, opt)
-			} // server WILLs go unanswered (matches known-good client capture)
+			if s.negotiate {
+				switch {
+				case cmd == do && opt == optTTYPE:
+					replies = append(replies, iac, will, opt) // banner is gated on TTYPE
+				case cmd == do:
+					replies = append(replies, iac, dont, opt)
+				} // server WILLs go unanswered (matches known-good client capture)
+			} // post-login proposals are stripped silently (answering triggers redraws)
 			i += 3
 		case b == iac:
 			i++ // incomplete IAC at chunk edge; wait for more
@@ -220,6 +225,7 @@ func (s *session) login(ctx context.Context) error {
 		case menuPrompt.MatchString(text):
 			return &AuthFailedError{Err: fmt.Errorf("account lands in menu mode; a full-CLI admin user is required")}
 		case promptPat.MatchString(text):
+			s.stopNegotiating()
 			return nil
 		default:
 			return fmt.Errorf("unexpected post-login output: %q", tail(text, 120))
