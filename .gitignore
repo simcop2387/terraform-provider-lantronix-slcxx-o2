@@ -6,3 +6,6 @@ mcp-telnet/
 github-mcp-server/
 skills-lock.json
 vendor_firmware/
+lab/
+dist/
+*.exe
