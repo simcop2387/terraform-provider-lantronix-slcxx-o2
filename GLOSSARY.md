@@ -31,4 +31,4 @@ The single SLC48 at 192.168.0.197 (firmware 5.2a, single-bank) used for live dev
 The telnet-transport provider slice: manage Device Port settings and Connection Settings, with per-port Terraform import. Accepted under both `terraform` and OpenTofu against the Lab Device.
 
 **Guardrails**
-The inviolable live-device rules: never modify the Telnet service configuration, the network configuration, or the `sysadmin` password. All other device state is fair game for testing; additional users may be created and manipulated.
+The inviolable live-device rules: never modify the Telnet service configuration, the network configuration (recovery needs manual front-panel console work), or the two admin accounts `sysadmin` and `simcop2387`. All other device state is fair game for testing; additional users may be created and manipulated.
